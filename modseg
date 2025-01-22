@@ -1,0 +1,153 @@
+import curses
+
+# Definição das classes de segurança
+FUNCIONARIO, RH, DIRETOR = range(3)
+
+class User:
+    def __init__(self, name, role):
+        self.name = name
+        self.role = role
+
+# Funções de segurança do modelo Bell-LaPadula
+def can_read_bell_lapadula(user, resource):
+    return user.role >= resource
+
+def can_write_bell_lapadula(user, resource):
+    return user.role <= resource
+
+# Funções de segurança do modelo Biba
+def can_read_biba(user, resource):
+    return user.role <= resource
+
+def can_write_biba(user, resource):
+    return user.role >= resource
+
+def main(stdscr):
+    users = [User("Alice", DIRETOR), User("Bob", RH), User("Charlie", FUNCIONARIO)]
+    user_choices = ["Alice (Diretor)", "Bob (RH)", "Charlie (Funcionario)"]
+    resource_choices = ["Funcionario", "RH", "Diretor"]
+    action_choices = ["Leitura", "Escrita"]
+
+    curses.start_color()
+    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLUE)
+    curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(4, curses.COLOR_RED, curses.COLOR_BLACK)
+
+    stdscr.clear()
+    stdscr.addstr(0, 0, "Modelos de Segurança:\nBell-LaPadula:\n 1. Leitura: Usuário só pode ler informações de nível igual ou inferior.\n 2. Escrita: Usuário só pode escrever informações de nível igual ou superior.\n\nBiba:\n 1. Leitura: Usuário só pode ler informações de nível igual ou superior.\n 2. Escrita: Usuário só pode escrever informações de nível igual ou inferior.\n")
+    stdscr.addstr(8, 0, "Pressione qualquer tecla para continuar...", curses.color_pair(1))
+    stdscr.refresh()
+    stdscr.getch()
+
+    highlight = 0
+
+    stdscr.addstr(curses.LINES - 1, 0, "Use as setas para cima/baixo para navegar, Enter para selecionar.")
+
+    # Escolha do usuário
+    while True:
+        stdscr.clear()
+        stdscr.addstr(0, 0, "Escolha um usuário", curses.color_pair(1))
+        for idx, choice in enumerate(user_choices):
+            if idx == highlight:
+                stdscr.addstr(idx + 2, 2, choice, curses.color_pair(2))
+            else:
+                stdscr.addstr(idx + 2, 2, choice)
+        stdscr.refresh()
+        c = stdscr.getch()
+        if c == curses.KEY_UP and highlight > 0:
+            highlight -= 1
+        elif c == curses.KEY_DOWN and highlight < len(user_choices) - 1:
+            highlight += 1
+        elif c == curses.KEY_ENTER or c == 10:
+            user_index = highlight
+            break
+
+    highlight = 0
+
+    # Escolha do recurso
+    while True:
+        stdscr.clear()
+        stdscr.addstr(0, 0, "Escolha um recurso", curses.color_pair(1))
+        for idx, choice in enumerate(resource_choices):
+            if idx == highlight:
+                stdscr.addstr(idx + 2, 2, choice, curses.color_pair(2))
+            else:
+                stdscr.addstr(idx + 2, 2, choice)
+        stdscr.refresh()
+        c = stdscr.getch()
+        if c == curses.KEY_UP and highlight > 0:
+            highlight -= 1
+        elif c == curses.KEY_DOWN and highlight < len(resource_choices) - 1:
+            highlight += 1
+        elif c == curses.KEY_ENTER or c == 10:
+            resource_index = highlight
+            break
+
+    highlight = 0
+
+    # Escolha da ação
+    while True:
+        stdscr.clear()
+        stdscr.addstr(0, 0, "Escolha uma ação", curses.color_pair(1))
+        for idx, choice in enumerate(action_choices):
+            if idx == highlight:
+                stdscr.addstr(idx + 2, 2, choice, curses.color_pair(2))
+            else:
+                stdscr.addstr(idx + 2, 2, choice)
+        stdscr.refresh()
+        c = stdscr.getch()
+        if c == curses.KEY_UP and highlight > 0:
+            highlight -= 1
+        elif c == curses.KEY_DOWN and highlight < len(action_choices) - 1:
+            highlight += 1
+        elif c == curses.KEY_ENTER or c == 10:
+            action_index = highlight
+            break
+
+    current_user = users[user_index]
+    resource_role = resource_index
+    action = action_index + 1
+
+    stdscr.clear()
+    stdscr.addstr(0, 0, f"Usuário: {current_user.name}", curses.color_pair(3))
+    stdscr.addstr(1, 0, f"Recurso: {resource_choices[resource_index]}", curses.color_pair(3))
+    stdscr.addstr(2, 0, f"Ação: {action_choices[action_index]}", curses.color_pair(3))
+
+    if (action == 1 and can_read_bell_lapadula(current_user, resource_role)):
+        stdscr.addstr(4, 0, "Bell-LaPadula: Leitura permitida.", curses.color_pair(4))
+        stdscr.addstr(5, 0, "Motivo: No modelo Bell-LaPadula, um usuário só pode ler informações de um nível igual ou inferior.")
+    elif (action == 2 and can_write_bell_lapadula(current_user, resource_role)):
+        stdscr.addstr(4, 0, "Bell-LaPadula: Escrita permitida.", curses.color_pair(4))
+        stdscr.addstr(5, 0, "Motivo: No modelo Bell-LaPadula, um usuário só pode escrever informações de um nível igual ou superior.")
+    else:
+        stdscr.addstr(4, 0, "Bell-LaPadula: Ação não permitida.", curses.color_pair(4))
+        if action == 1:
+            stdscr.addstr(5, 0, "Motivo: No modelo Bell-LaPadula, um usuário só pode ler informações de um nível igual ou inferior.")
+        else:
+            stdscr.addstr(5, 0, "Motivo: No modelo Bell-LaPadula, um usuário só pode escrever informações de um nível igual ou superior.")
+
+    if (action == 1 and can_read_biba(current_user, resource_role)):
+        stdscr.addstr(7, 0, "Biba: Leitura permitida.", curses.color_pair(4))
+        stdscr.addstr(8, 0, "Motivo: No modelo Biba, um usuário só pode ler informações de um nível de segurança igual ou superior.")
+    elif (action == 2 and can_write_biba(current_user, resource_role)):
+        stdscr.addstr(7, 0, "Biba: Escrita permitida.", curses.color_pair(4))
+        stdscr.addstr(8, 0, "Motivo: No modelo Biba, um usuário só pode escrever informações de um nível de segurança igual ou inferior.")
+    else:
+        stdscr.addstr(7, 0, "Biba: Ação não permitida.", curses.color_pair(4))
+        if action == 1:
+            stdscr.addstr(8, 0, "Motivo: No modelo Biba, um usuário só pode ler informações de um nível de segurança igual ou superior.")
+        else:
+            stdscr.addstr(8, 0, "Motivo: No modelo Biba, um usuário só pode escrever informações de um nível de segurança igual ou inferior.")
+
+    # Informações adicionais sobre os modelos
+    stdscr.addstr(10, 0, "Informações adicionais:", curses.color_pair(1))
+    stdscr.addstr(11, 0, "Bell-LaPadula é focado na confidencialidade.", curses.color_pair(3))
+    stdscr.addstr(12, 0, "Biba prioriza a integridade.", curses.color_pair(3))
+
+    stdscr.addstr(curses.LINES - 1, 0, "Pressione qualquer tecla para sair.")
+    stdscr.refresh()
+    stdscr.getch()
+
+if __name__ == "__main__":
+    curses.wrapper(main)
